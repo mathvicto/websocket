@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat do WebSocket (Socket.IO)</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="well">
+                    <h3>Usuários Online</h3>
+                    <ul class="list-group" id="users"></ul>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="chat" id="chat"></div>
+                <form id="messageForm" class="form">
+                    <div class="form-group">
+                        <label for="message">Digite a mensagem</label>
+                        <textarea class="form-control" id="message" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Enviar Mensagem</button>
+                </form>
+                <p id="typing"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(function () {
+            const socket = io.connect();
+            const $messageForm = $('#messageForm');
+            const $message = $('#message');
+            const $chat = $('#chat');
+            const $userList = $('#users');
+            const $typing = $('#typing');
+
+            $messageForm.submit(function (e) {
+                e.preventDefault();
+                const messageValue = $message.val().trim();
+                if (messageValue) {
+                    socket.emit('send message', messageValue);
+                    $message.val('');
+                    socket.emit('stop typing');
+                }
+            });
+
+            $message.on('input', function() {
+                socket.emit('typing');
+            });
+
+            socket.on('new message', function (data) {
+                $chat.append(`<div class="well">${data.username}: ${data.msg}</div>`);
+            });
+
+            socket.on('get users', function (users) {
+                $userList.empty();
+                users.forEach(user => {
+                    $userList.append(`<li class="list-group-item">${user}</li>`);
+                });
+            });
+
+            socket.on('typing', function(username) {
+                $typing.text(`${username} está digitando...`);
+            });
+
+            socket.on('stop typing', function() {
+                $typing.text('');
+            });
+        });
+    </script>
+</body>
+</html>
